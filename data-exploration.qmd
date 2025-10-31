@@ -1,0 +1,68 @@
+---
+title: "Data Exploration"
+author: Ava Robillard
+date: 10/31/25
+format: html
+---
+
+```{r}
+#| message: FALSE
+library(here)
+library(tidyverse)
+library(janitor)
+library(nationalparkcolors)
+
+# Read in data
+autumn_data <- read_csv(here::here("data/autumn_data.csv")) %>% 
+  clean_names()
+```
+
+```{r}
+#| warning: FALSE
+#| fig-cap: "Figure 1: Initial exploration of the effects of year on annual mean temperature, colored by maple tree species."
+
+# Create color palette for visualizations
+pal <- park_palette("BryceCanyon")
+
+# Create scatter plot
+ggplot(autumn_data, aes(x = year, y = annual_temp, color = species)) +
+  geom_point(alpha = 0.5) +
+  labs(x = "Year",
+       y = "Annual mean temperaure") +
+  scale_color_manual(values = pal[c(1,2)]) +
+  theme_minimal()
+```
+
+```{r}
+#| warning: FALSE
+#| fig-cap: "Figure 2: Initial exploration of the amount of Herbarium specimens coded to have colored leaves (1) or no colored leaves (0)."
+
+# Create bar plot
+ggplot(autumn_data, aes(x = colored_leaves, fill = species)) +
+  geom_bar() +
+  labs(x = "Colored leaves?",
+       y = "Count") +
+  scale_fill_manual(values = pal[c(1,2)]) +
+  scale_x_continuous(breaks = c(0, 1)) +
+  theme_minimal()
+```
+
+```{r}
+#| message: FALSE
+#| fig-cap: "Figure 3: Initial exploration of how many herbarium specimens had colored leaves in each year."
+
+yearly_color <- autumn_data %>% 
+  group_by(year) %>% 
+  summarize(plants_with_color = sum(colored_leaves))
+
+# Create bar plot
+annual_color <- ggplot(yearly_color, aes(x = year)) +
+  geom_histogram(fill = pal[(3)]) +
+  labs(x = "Year",
+       y = "Count of herbarium samples with colored leaves") +
+  theme_minimal()
+
+annual_color
+```
+
+I want to look at what variables affect/predict leaf color the most, which could be temperature. I also want to see if there are more colored leaves earlier in the year for the herbarium samples collected in later years, so I might need to do some data wrangling with the doy, year, and colored_leaves columns.

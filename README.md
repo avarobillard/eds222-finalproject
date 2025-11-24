@@ -8,16 +8,16 @@ The effect of day of year (DOY) on the probability of Maple leaf specimen colora
 
 ### Model description: segmented model
 
-``` math
+$$
 \begin{align}
 \text{BinaryOutcome} &\sim \text{Binomial}(1, p) \\
 \text{logit}(p) &=
 \begin{cases}
-\beta_0 + \beta_1 \cdot \text{doy} + \beta_2 \cdot \text{mean_fall}, & \text{if } \text{year} \le \psi \\[2mm]
-\beta_0 + \beta_1' \cdot \text{doy} + \beta_2 \cdot \text{mean_fall}, & \text{if } \text{year} > \psi
+\beta_0 + \beta_1 \cdot \text{doy} + \beta_2 \cdot \text{mean\_fall}, & \text{if } \text{year} \le \psi \\[1mm]
+\beta_0 + \beta_1' \cdot \text{doy} + \beta_2 \cdot \text{mean\_fall}, & \text{if } \text{year} > \psi
 \end{cases}
 \end{align}
-```
+$$
 
 -   **Response family:** binomial (Y=1 indicated a colored leaf herbarium specimen, Y=0 is not colored)
 -   **Link function:** logit

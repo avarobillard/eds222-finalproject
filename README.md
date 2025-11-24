@@ -11,7 +11,7 @@ The effect of day of year (DOY) on the probability of Maple leaf specimen colora
 ``` math
 \begin{align}
 \text{BinaryOutcome} &\sim \text{Binomial}(1, p) \\
-\text{logit}\bigl(p(\text{Y} = 1)\bigr) &=
+\text{logit}(p) &=
 \begin{cases}
 \beta_0 + \beta_1 \cdot \text{doy} + \beta_2 \cdot \text{mean_fall}, & \text{if } \text{year} \le \psi \\[2mm]
 \beta_0 + \beta_1' \cdot \text{doy} + \beta_2 \cdot \text{mean_fall}, & \text{if } \text{year} > \psi

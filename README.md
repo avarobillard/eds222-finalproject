@@ -16,16 +16,16 @@ The effect of day of year (DOY) on the probability of Maple leaf specimen colora
 \end{cases}
 ```
 
--   Response family: binomial
--   Link function: logit
--   Predictors: day of year (DOY), mean fall temperature (Mean_Fall), Year (segmented predictor)
+-   **Response family:** binomial
+-   **Link function:** logit
+-   **Predictors:** day of year (DOY), mean fall temperature (Mean_Fall), Year (segmented predictor)
 
 #### Statistical hypothesis:
 
--   Null hypothesis (H0): One slope describes the effect of DOY on leaf coloration (slopes are the same before and after breakpoint)
+-   **Null hypothesis (H0):** One slope describes the effect of DOY on leaf coloration (slopes are the same before and after breakpoint)
 
 H0: $\beta_1 = \beta_1'$
 
--   Alternative hypothesis (Ha): Multiple slopes describe the effect of DOY on leaf coloration (slopes are different before and after breakpoint)
+-   **Alternative hypothesis (Ha):** Multiple slopes describe the effect of DOY on leaf coloration (slopes are different before and after breakpoint)
 
 Ha: $\beta_1 \neq \beta_1'$

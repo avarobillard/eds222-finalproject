@@ -10,12 +10,13 @@ The effect of day of year (DOY) on the probability of Maple leaf specimen colora
 
 ``` math
 \begin{align}
-\text{BinaryOutcome} &\sim Binomial(1, p) \\
-\text{logit}\bigl(P(Y = 1)\bigr) =
+\text{BinaryOutcome} &\sim \text{Binomial}(1, p) \\
+\text{logit}\bigl(P(\text{BinaryOutcome} = 1)\bigr) &=
 \begin{cases}
-\beta_0 + \beta_1 \cdot \text{DOY} + \beta_2 \cdot \text{MeanFall}, & \text{if } \text{Year} \le \psi \\[6pt]
+\beta_0 + \beta_1 \cdot \text{DOY} + \beta_2 \cdot \text{MeanFall}, & \text{if } \text{Year} \le \psi \\[2mm]
 \beta_0 + \beta_1' \cdot \text{DOY} + \beta_2 \cdot \text{MeanFall}, & \text{if } \text{Year} > \psi
 \end{cases}
+\end{align}
 ```
 
 -   **Response family:** binomial (Y=1 indicated a colored leaf herbarium specimen, Y=0 is not colored)

@@ -6,9 +6,11 @@
 
 The effect of day of year (DOY) on the probability of Maple leaf specimen coloration changed over time, with a steeper relationship between DOY and coloration probability after a specific year breakpoint.
 
-### Model description:
+### Model description: segmented model
 
 ``` math
+\begin{align}
+\text{BinaryOutcome} &\sim Binomial(1, p) \\
 \text{logit}\bigl(P(Y = 1)\bigr) =
 \begin{cases}
 \beta_0 + \beta_1 \cdot \text{DOY} + \beta_2 \cdot \text{MeanFall}, & \text{if } \text{Year} \le \psi \\[6pt]
@@ -16,7 +18,7 @@ The effect of day of year (DOY) on the probability of Maple leaf specimen colora
 \end{cases}
 ```
 
--   **Response family:** binomial
+-   **Response family:** binomial (Y=1 indicated a colored leaf herbarium specimen, Y=0 is not colored)
 -   **Link function:** logit
 -   **Predictors:** day of year (DOY), mean fall temperature (Mean_Fall), Year (segmented predictor)
 

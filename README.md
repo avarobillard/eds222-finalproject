@@ -13,8 +13,8 @@ $$
 \text{BinaryOutcome} &\sim \text{Binomial}(1, p) \\
 \text{logit}(p) &=
 \begin{cases}
-\beta_0 + \beta_1 \cdot \text{doy} + \beta_2 \cdot \text{mean\_fall}, & \text{if year} \le \psi \\[1mm]
-\beta_0 + \beta_1' \cdot \text{doy} + \beta_2 \cdot \text{mean\_fall}, & \text{if year} > \psi
+\beta_0 + \beta_1 \cdot \text{doy} + \beta_2 \cdot \text{meanfall}, & \text{if year} \le \psi \\[1mm]
+\beta_0 + \beta_1' \cdot \text{doy} + \beta_2 \cdot \text{meanfall}, & \text{if year} > \psi
 \end{cases}
 \end{aligned}
 $$

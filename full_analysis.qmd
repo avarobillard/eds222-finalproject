@@ -1,5 +1,5 @@
 ---
-title: "Draft of Herbarium Specimen Phenology Analysis"
+title: "EDS 222 Final Project: Herbarium Specimen Phenology Analysis"
 author: Ava Robillard
 date: 12/3/25
 format: html
@@ -7,11 +7,11 @@ format: html
 
 ## Question and data
 
-Many studies have found climate-related delays in the timing of leaf coloration, but do not have a lot of data from before the late 20th century.
+Many studies have found climate-related delays in the timing of leaf coloration, but do not have a lot of data from before the late 20th century [@garreston].
 
-A data set collected by Garretson and Forkner in 2021 contains evaluations of 2,972 digitized herbaria specimens of red and sugar maples collected between 1826 and 2016. They paired these specimens with climate and locality information to investigate long-term trends in autumn phenology over the past century (cite).
+A data set collected by Garretson and Forkner in 2021 from the Southeast Regional Network of Expertise and Collections [@SRNEC] contains evaluations of 2,972 digitized herbaria specimens of red and sugar maples collected between 1826 and 2016. They paired these specimens with climate and locality information to investigate long-term trends in autumn phenology over the past century [@edi713].
 
-Using this data, I want to analyze the effects of day of year, year, and mean fall temperature on the presence of colored leaves as well as determine whether the doy when there becomes a higher probability of leaf color is shifting earlier over time.
+Using this data, I want to analyze the effects of day of year (doy), year, and mean fall temperature on the presence of colored leaves as well as determine whether the day of the year when there becomes a higher probability of leaf color is shifting earlier over time.
 
 ::: figure
 ![DAG](images/herbaria_dag.png){width="60%"}
@@ -22,21 +22,26 @@ I think that year, day of the year, and mean fall temperature all have an effect
 ### Load packages and data
 
 ```{r}
+#| code-fold: TRUE
 #| message: FALSE
 library(here)
 library(tidyverse)
 library(janitor)
 library(segmented)
-library(maps)
+library(kableExtra)
+library(broom)
+library(gtsummary)
+library(modelsummary)
 
 # Read in data
-autumn_data <- read_csv(here::here("data/autumn_data.csv")) %>% 
+autumn_data <- read_csv(here::here("data", "autumn_data.csv")) %>% 
   clean_names() 
 ```
 
 ### 1. Explore data
 
 ```{r}
+#| code-fold: TRUE
 #| warning: false
 #| fig-cap: "Figure 1: Initial exploration of the spatial distribution of Herbarium specimens."
 
@@ -47,9 +52,12 @@ ggplot(autumn_data, aes(x = longitude, y = latitude)) +
   theme_minimal()
 ```
 
+The specimens are located relatively uniformly throughout the Northeast.
+
 ```{r}
+#| code-fold: TRUE
 #| warning: FALSE
-#| #| fig-cap: "Figure 2: Initial exploration of the effects of day of the year on the presence of colored leaves (0/1)."
+#| fig-cap: "Figure 2: Initial exploration of the effects of day of the year on the presence of colored leaves (0/1)."
 
 # Create scatter plot
 ggplot(autumn_data, aes(x = doy, y = colored_leaves, color = species)) +
@@ -60,9 +68,12 @@ ggplot(autumn_data, aes(x = doy, y = colored_leaves, color = species)) +
   theme_minimal() 
 ```
 
+The binary colored_leaves variable appears to have many more specimens with non-colored leaves, which are spread throughout the entire year but show a cluster between about doy 80 and 300. There are fewer specimens with colored leaves, with a more concentrated spread between doy 100 and 320. This data distribution suggests that a logistic regression model could be a good fit.
+
 ```{r}
 #| warning: FALSE
-#| #| fig-cap: "Figure 3: Initial exploration of the effects of day of the year on the presence of colored leaves (0/1)."
+#| code-fold: TRUE
+#| fig-cap: "Figure 3: Initial exploration of the effects of day of the year on the presence of colored leaves (0/1)."
 
 # Filter data to a few years to visualize this over time
 autumn_data_decades <- autumn_data %>% 
@@ -78,6 +89,8 @@ ggplot(autumn_data_decades, aes(x = doy, y = colored_leaves, color = year)) +
   theme_minimal() 
 ```
 
+This plot shows that there are relatively few colored leaf data points in each year of observation, which might create a challenge when trying to draw conclusions.
+
 ### 2. Fit model
 
 After exploring the data, I want to fit a binomial model with day of year, year, and mean fall temperature as predictors and colored leaves as a binary response.
@@ -90,16 +103,21 @@ bin_model <- glm(colored_leaves ~ doy + year + mean_fall,
 ```
 
 ```{r}
-summary(bin_model)
+#| code-fold: TRUE
+# Create coefficient table
+tidy(bin_model) %>%
+  kable(digits = 3, caption = "Coefficient Estimates for Binomial Model") %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
-Only day of year is significant, with a p-value below 0.05.
+Only the day of year variable is significant, with a p-value below 0.05. The positive coefficients for doy and mean_fall could indicate that the probability of colored leaves increases later in the year and with warmer fall temperatures. The slightly negative sign of year indicates that the probability of colored leaves decreases in some way each year.
 
 ### 3. Explore logistic curves over time
 
-I want to look at the model fit over a selection of years to better visualize whether doy where probability of colored leaves shifts from 0 to 1 becomes earlier over time. Setting mean_fall to the average allows us to focus on the relationship between day of year and year on leaf coloration.
+Next, I want to look at the model fit over a selection of years to better visualize whether doy where probability of colored leaves shifts from 0 to 1 becomes earlier over time. Setting mean_fall to the average allows us to focus on the relationship between day of year and year on leaf coloration.
 
 ```{r}
+#| code-fold: TRUE
 # Pick four years to model
 years <- c(1900, 1940, 1980, 2020)
 
@@ -120,6 +138,7 @@ bin_model_pred <- pred_grid %>%
 ```
 
 ```{r}
+#| code-fold: TRUE
 # Plot predictions for three years 
 ggplot(bin_model_pred, aes(x = doy, y = p, color = factor(year))) +
   geom_line() +
@@ -130,7 +149,10 @@ ggplot(bin_model_pred, aes(x = doy, y = p, color = factor(year))) +
   theme_minimal()
 ```
 
+We can also transition between link and response space to visualize this plot with confidence intervals.
+
 ```{r}
+#| code-fold: TRUE
 # Create confidence interval
 bin_model_se <- predict(object = bin_model,
                           newdata = pred_grid,
@@ -169,9 +191,9 @@ ggplot(bin_model_pred_l_filtered, aes(x = doy, y = p, fill = year))+
   theme_minimal()
 ```
 
-Based on this figure, the day of year where leaf coloration probability is 0.5 is shifting to the right, or becoming later in the year over time.
+Based on this figure, the day of year where leaf coloration probability is 0.5 is shifting to the right from 1900 to 2020, or becoming later in the year over time.
 
-To see if my results will change due to seasonality and when colored leaves are most probable, I want to make mid-summer associated with 0 as this is when there is most likely to be 0 colored leaves, and shift the other days of the year accordingly. I also want to group the data by decade to create more data points for plotting.
+To see if my results will change due to seasonality and when colored leaves are most probable, I want to make mid-summer associated with 0 as this is when there is most likely to be 0 colored leaves, and shift the other days of the year accordingly. I also want to group the data by decade to create more data points for plotting, to correct for the issues seen in Figure 3 of my data exploration.
 
 ```{r}
 # Mutate data 
@@ -188,10 +210,18 @@ bin_model_summer <- glm(colored_leaves ~ doy_summer + decade + mean_fall,
 ```
 
 ```{r}
-summary(bin_model_summer)
+#| message: false
+#| code-fold: TRUE
+# Create coefficient table
+tidy(bin_model_summer) %>%
+  kable(digits = 3, caption = "Coefficient Estimates for Binomial Decade Model") %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
+Only day of year continued to be statistically significant, but in contrast to the previous model is negative. Let's see what this looks like plotted!
+
 ```{r}
+#| code-fold: TRUE
 # Pick four decades to model
 decades <- c(1900, 1940, 1980, 2010)
 
@@ -212,6 +242,7 @@ bin_model_pred2 <- pred_grid2 %>%
 ```
 
 ```{r}
+#| code-fold: TRUE
 # Plot predictions for four decades
 ggplot(bin_model_pred2, aes(x = doy_summer, y = p, color = factor(decade))) +
   geom_line() +
@@ -224,7 +255,7 @@ ggplot(bin_model_pred2, aes(x = doy_summer, y = p, color = factor(decade))) +
 
 This plot shows a negative trend in leave coloration probability over time with a starting point of mid summer.
 
-## Statistical model
+### 4. Statistical model and simulation
 
 Next, I want to try to use a segmented model to look at the rate of change between these curves and determine whether the doy at which the probability of having colored leaves increases shifts back at a faster rate after a certain year break point.
 
@@ -245,9 +276,19 @@ $$
 \end{cases}
 $$
 
-A segmented model allows for a change in the relationship between response and explanatory variables at a breakpoint, where beta 2 gets added to the slope of beta 1 if the year is beyond the breakpoint.
+A segmented model allows for a change in the relationship between response and explanatory variables at a breakpoint, where beta 3 gets added to the slope of beta 2 if the year is beyond the breakpoint [@kaizer_segmented_regression]. Based on this idea, I set up my hypotheses:
 
-We can use a simplified model to simulate data from and better understand how a segmented model works:
+#### Statistical hypothesis:
+
+-   **Null hypothesis (H0):** One slope describes the effect of year on leaf coloration (slopes are the same before and after breakpoint)
+
+H0: $\beta_3 = 0$
+
+-   **Alternative hypothesis (Ha):** Multiple slopes describe the effect of year on leaf coloration (slopes are different before and after breakpoint)
+
+Ha: $\beta_3 \neq 0$
+
+Before applying this model to my actual data, we can use a simplified model to simulate data from and better understand how a segmented model works:
 
 $$
 \text{BinaryOutcome} \sim \text{Binomial}(1, p)
@@ -255,19 +296,17 @@ $$
 
 $$
 \text{logit}(p) =
-\beta_0 + \beta_1 \cdot \text{x} + \beta_2 \cdot \text{x} \cdot \text{after_breakpoint}
+\beta_0 + \beta_1 \cdot \text{x} + \beta_2 \cdot \text{x} \cdot \text{afterbreakpoint}
 $$
 
-Where after_breakpoint is a binary variable where 0 corresponds to before the determined breakpoint and 1 is after. This allows us to have the different slopes depending upon where we are along the x-axis. This difference in slopes is beta 2.
+Where afterbreakpoint is a binary variable where 0 corresponds to before the determined breakpoint and 1 is after. This allows us to have the different slopes depending upon where we are along the x-axis. This difference in slopes is beta 2.
 
 We will use these steps:
 
 1.  Choose a set of parameters and predictor variable(s) for the simulation
-2.  Use a random variable to generate a response, based on the parameters and predictor(s)
-3.  Fit a model to the simulated data
-4.  Check if the model's parameter estimates match selected parameters
 
 ```{r}
+#| code-fold: TRUE
 set.seed(123)
 
 # 1. Choose a set of parameters 
@@ -284,13 +323,18 @@ x <- x_before - 10
 
 # Create breakpoint indicator- now @ x = 0 
 # make this 0 if x is negative and 1 if x is positive
-after_breakpoint <- case_when(
+afterbreakpoint <- case_when(
   x < 0 ~ 0,
   x >= 0 ~ 1
 )
+```
 
+2.  Use a random variable to generate a response, based on the parameters and predictor(s)
+
+```{r}
+#| code-fold: TRUE
 # Write out formula based on model notation
-logit_p <- beta0 + beta1*x + beta2*(x*after_breakpoint)
+logit_p <- beta0 + beta1*x + beta2*(x*afterbreakpoint)
 
 p <- exp(logit_p) / (1 + exp(logit_p))
 
@@ -298,25 +342,43 @@ p <- exp(logit_p) / (1 + exp(logit_p))
 y <- rbinom(n = length(p), size = 1, prob = p)
 
 # Create full simulated data
-sim_dat <- tibble(x, after_breakpoint, y) 
+sim_dat <- tibble(x, afterbreakpoint, y) 
+```
 
+3.  Fit a model to the simulated data
+
+```{r}
+#| code-fold: TRUE
 # 3. Fit model to simulated data
-sim_mod <- glm(y ~ x + x:after_breakpoint,
+sim_mod <- glm(y ~ x + x:afterbreakpoint,
                  data = sim_dat,
                  family = binomial(link = "logit"))
+```
 
+4.  Check if the model's parameter estimates match selected parameters
+
+```{r}
+#| code-fold: TRUE
 # 4. Check if model's parameters match 
 mod_summ <- summary(sim_mod)
 beta_0_hat <- coef(sim_mod)[1]
 beta_1_hat <- coef(sim_mod)[2]
 beta_2_hat <- coef(sim_mod)[3]
 
-summary(sim_mod)
+# Create kable table with values for comparison
+comparison_table <- rbind(
+  Selected = round(c(beta0, beta1, beta2), 2),
+  Model = round(c(beta_0_hat, beta_1_hat, beta_2_hat), 2))
+
+colnames(comparison_table) <- c("Beta 0", "Beta 1", "Beta 2")
+
+kable(comparison_table, caption = "Coefficient Comparisons", align = "c") %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 The Intercept (beta 0) was very close to the selected value of 0, and the x (beta 1) was very close to the selected value of 0.4. The x associated with being after the breakpoint (beta 2) was slightly lower than the selected value of 0.5.
 
-### Inference
+### 5. Inference
 
 Now, I want to apply a segmented model to my original binomial model at an estimated break point in 1980.
 
@@ -326,16 +388,37 @@ seg_model <- segmented(bin_model, seg.Z = ~year, psi = list(year = 1980))
 ```
 
 ```{r}
-summary(seg_model)
+#| warning: FALSE
+#| code-fold: TRUE
+# Create coefficient table
+tidy(seg_model) %>%
+  kable(digits = 3, caption = "Coefficient Estimates for Segmented Model") %>% 
+  kable_styling(bootstrap_options = "striped")
 ```
 
 ```{r}
-confint(seg_model)
+#| code-fold: TRUE
+seg_ci <- confint(seg_model)
+
+# Convert to data frame for kable
+ci_table <- as.data.frame(seg_ci)
+ci_table$Term <- rownames(ci_table)
+colnames(ci_table) <- c("Est.", "Lower", "Upper")  
+
+# Reorder columns 
+ci_table <- ci_table[, c("Est.", "Lower", "Upper")]
+
+# Round and make table
+ci_table %>%
+  round(2) %>%
+  kable(caption = "Segmented Model 95% Confidence Intervals", align = "c") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
 ```
 
-The estimated break point was in 1968, with a standard error of about 14 years ranging between 1940 and 1995. This is quite a large range!
+The estimated break point (where the slope of year changes) was in 1968, with a standard error of about 14 years ranging between 1940 and 1996 (the 95% CI). This is quite a large range! The coefficients for doy, year, and mean_fall were all slightly positive, but only doy was significant, indicating that the the probability of colored leaves increases later in the year. The estimate for U1.year, or the change in slope after the breakpoint, was -0.0145. Subtracting this value from the original slope for year (beta 2, 0.0025), the estimated slope after the breakpoint was -0.012. In context, the slope for year changed from slightly positive to slightly negative after the breakpoint in 1968.
 
 ```{r}
+#| code-fold: TRUE
 # Make data frame of predictors using means for fixed variables
 pred_grid <- expand_grid(
   doy = 1:365,
@@ -351,7 +434,10 @@ seg_model_pred <- pred_grid %>%
   mutate(p = predict(object = seg_model,
                      newdata = pred_grid,
                      type = "response"))
+```
 
+```{r}
+#| code-fold: TRUE
 # Plot predictions for three years 
 ggplot(seg_model_pred, aes(x = doy, y = p, color = factor(year))) +
   geom_line() +
@@ -362,9 +448,10 @@ ggplot(seg_model_pred, aes(x = doy, y = p, color = factor(year))) +
   theme_minimal()
 ```
 
-2020 has a clearly lower slope than the other years, indicating a the probability of colored leaves being lower further into the year than in previous decades.
+2020 has a clearly lower slope than the other years, indicating the probability of colored leaves being lower further into the year than in previous decades. We can also visualize this with confidence intervals.
 
 ```{r}
+#| code-fold: TRUE
 # Create confidence interval
 seg_model_se <- predict(object = seg_model,
                           newdata = pred_grid,
@@ -392,7 +479,10 @@ seg_model_pred <- pred_grid %>%
 seg_model_pred_filtered <- seg_model_pred %>%
   filter(year %in% c(1900, 1940, 1980, 2020)) %>%
   mutate(year = factor(year))
+```
 
+```{r}
+#| code-fold: TRUE
 # plot 
 ggplot(seg_model_pred_filtered, aes(x = doy, y = p, fill = year))+
   geom_ribbon(aes(ymin = p_lwr, ymax = p_upr), alpha = 0.2) +
@@ -403,15 +493,22 @@ ggplot(seg_model_pred_filtered, aes(x = doy, y = p, fill = year))+
   theme_minimal()
 ```
 
-Based upon this figure, the CI for the year 2020 is distinct from the previous decades that were plotted.
+Based upon this figure, the CI for the year 2020 is visually distinct from the previous decades that were plotted.
 
-I also found Davies' test for a change in slope, which is specifically for hypothesis testing for breakpoints. It evaluates whether the difference in slopes is significantly different from 0, or whether we actually need a breakpoint.
+I also found Davies' test for a change in slope, which is specifically for hypothesis testing for breakpoints. It evaluates whether the difference in slopes is significantly different from 0, or whether we actually need a breakpoint [@segmented2025].
 
 ```{r}
-davies.test(bin_model, seg.Z = ~ year, k=10)
+#| code-fold: TRUE
+davies <- davies.test(bin_model, seg.Z = ~ year, k=10)
+
+# Make coefficient table 
+tidy(davies) %>%
+  kable(digits = 3, caption = "Davies Test Results") %>% 
+  kable_styling(bootstrap_options = "striped")
+  
 ```
 
-Because the resulting p-value was 0.35 and far above 0.05, we cannot reject H0 that beta3 = 0, don't see that there is a significant change in the shift in the doy of leave coloration over time.
+### 6. Conclusion
 
 If we look back at our hypotheses:
 
@@ -423,14 +520,4 @@ H0: $\beta_3 = 0$
 
 Ha: $\beta_3 \neq 0$
 
-Because the resulting p-value was 0.35 and far above 0.05, we cannot reject H0 that one slope describes the effect of year on leaf coloration, and therefore don't see that there is a significant change in the shift in the doy of leave coloration over time.
-
-REFERENCES:
-
-<https://portal.edirepository.org/nis/mapbrowse?packageid=edi.713.2>
-
-<https://ui.adsabs.harvard.edu/abs/2021FrFGC...4.4763G/abstract>
-
-<https://rdrr.io/cran/segmented/man/davies.test.html>
-
-<https://www.alexkaizer.com/bios_6618/files/bios6618/W16/segmented_regression.pdf>
+Because the resulting p-value was 0.35 and far above 0.05, we cannot reject H0 that one slope describes the effect of year on leaf coloration, and therefore don't see that there is a significant change in the shift in the doy of leave coloration over time. A lot of our results were not intuitive, as we would assume that leaf coloration would be seen earlier in the year due to climate change and warmer temperatures being experienced earlier in the year. The difference in our results might be due to different statistical methodology or an uneven sample, where there were far less specimens with colored leaves to include as data in our model. In further analysis, I would like to dive deeper into what variables might be confounding these results such as seasonality or location, or attempt to use a GAM to look at non-linear relationships between predictor and response variables. Lastly, the data set contained a binary variable for leaf presence, which could affect our results as Maple leaves fall after changing color and would create a narrow window to detect color.
